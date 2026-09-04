@@ -1,0 +1,10 @@
+# Entorno virtual
+.venv/
+venv/
+
+# Variables de entorno (contiene API keys reales)
+.env
+
+# Python
+__pycache__/
+*.pyc
