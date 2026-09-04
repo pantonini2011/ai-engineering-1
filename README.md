@@ -64,36 +64,6 @@ Esto ejecuta, para OpenAI, Anthropic y Ollama, una misma pregunta corta ("¿Qué
 
 Si a algún proveedor le falta la API key correspondiente o falla la conexión, el script captura el error y lo muestra sin interrumpir la ejecución de los demás proveedores.
 
-## Uso programático
-
-```python
-import asyncio
-from clientes import AsyncLLMManager
-from schemas import ChatMessage, ModelConfig
-
-async def main():
-    # Proveedor intercambiable: "openai", "anthropic" u "ollama"
-    manager = AsyncLLMManager(provider="openai", model="gpt-4o-mini")
-    config = ModelConfig(temperature=0.7, max_tokens=200)
-    messages = [
-        ChatMessage(role="system", content="Respondé en español, en un párrafo breve."),
-        ChatMessage(role="user", content="¿Qué es la entropía?"),
-    ]
-
-    # Modo estándar
-    response = await manager.generate(messages, config)
-    if response.error:
-        print(f"Error: {response.error}")
-    else:
-        print(response.content)
-
-    # Modo streaming
-    async for chunk in manager.stream(messages, config):
-        print(chunk, end="", flush=True)
-
-asyncio.run(main())
-```
-
 ## Proveedores soportados
 
 | Proveedor | Clase | Modelo por defecto | SDK |
