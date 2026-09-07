@@ -11,9 +11,9 @@ from tests.conftest import make_connection_error, make_rate_limit_error
 
 
 def make_messages_response(text: str, input_tokens=10, output_tokens=5):
-    block = MagicMock(text=text)
-    usage = MagicMock(input_tokens=input_tokens, output_tokens=output_tokens)
-    return MagicMock(content=[block], usage=usage)
+    block = MagicMock(text=text)     #Simula un bloque de contenido en la respuesta
+    usage = MagicMock(input_tokens=input_tokens, output_tokens=output_tokens) #Simula el objeto de métricas de consumo de tokens.
+    return MagicMock(content=[block], usage=usage) #Retorna la respuesta principal simulada
 
 
 class FakeMessageStreamManager:
@@ -62,6 +62,9 @@ def test_extract_system_and_messages_separates_system_prompt(client):
     assert system_prompt == "Sé breve"
     assert formatted == [{"role": "user", "content": "Hola"}]
 
+
+""" Verifica que el método generate de AnthropicClient procese de punta a punta una respuesta 
+exitosa y devuelva un objeto ModelResponse consistente con la especificación del sistema """
 
 async def test_generate_success(client, sample_messages, sample_config):
     client.client.messages.create = AsyncMock(return_value=make_messages_response("La entropía es..."))
