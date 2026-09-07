@@ -6,10 +6,13 @@ Cliente asíncrono unificado para interactuar con distintos proveedores de LLM (
 
 ```
 .
-├── schemas.py       # Modelos Pydantic: ChatMessage, ModelConfig, ModelResponse
-├── clientes.py       # BaseLLMClient (ABC), OpenAIClient, AnthropicClient, OllamaClient, AsyncLLMManager
-├── main.py           # Script de prueba: modo estándar + streaming
+├── schemas.py           # Modelos Pydantic: ChatMessage, ModelConfig, ModelResponse
+├── clientes.py          # BaseLLMClient (ABC), OpenAIClient, AnthropicClient, OllamaClient, AsyncLLMManager
+├── main.py              # Script de prueba: modo estándar + streaming
+├── tests/               # Suite de tests con pytest (mockean los SDKs, no pegan a la red)
 ├── requirements.txt
+├── requirements-dev.txt # requirements.txt + pytest/pytest-asyncio
+├── pytest.ini
 ├── .env.example
 └── README.md
 ```
@@ -81,3 +84,20 @@ Si a algún proveedor le falta la API key correspondiente o falla la conexión, 
 ## Manejo de errores
 
 Todas las llamadas están envueltas en `try/except`. Los errores de límite de tasa (`RateLimitError`) y de API (`APIError`) se capturan de forma específica para OpenAI y Anthropic, devolviendo un `ModelResponse` con el campo `error` completado en lugar de propagar la excepción y detener el programa. Cualquier otro error no anticipado cae en un `except Exception` genérico con el mismo criterio.
+
+Ante `RateLimitError` y `APIConnectionError` (errores transitorios) se reintenta automáticamente con backoff exponencial (1s, 2s, 4s — hasta 3 reintentos). En `generate()` se reintenta la llamada completa; en `stream()` solo se reintenta la apertura de la conexión inicial, nunca después de haber emitido el primer fragmento de texto (para no duplicar contenido ya mostrado).
+
+## Tests
+
+La suite usa `pytest` + `pytest-asyncio` y mockea los SDKs de `openai`/`anthropic` (nunca hace llamadas de red reales, no consume créditos de ninguna API):
+
+```bash
+pip install -r requirements-dev.txt
+pytest -v
+```
+
+Cobertura:
+
+- `schemas.py`: rangos y roles válidos/inválidos de `ChatMessage` y `ModelConfig`.
+- `OpenAIClient` / `AnthropicClient` / `OllamaClient`: `generate()` y `stream()` exitosos, mapeo de errores a `ModelResponse`/`StreamChunk`, y la lógica de reintento con backoff (incluyendo que no reintenta una vez que ya se emitió un fragmento en streaming).
+- `AsyncLLMManager`: selección dinámica de proveedor, proveedor inválido, propagación de configuración por default y explícita, delegación de `stream()`/`close()`.
