@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from schemas import ChatMessage, ModelConfig, ModelResponse, StreamChunk
+from schemas import ChatMessage, ModelConfig, ModelResponse, StreamChunk, TokenUsage
 
 
 @pytest.mark.parametrize("role", ["system", "user", "assistant"])
@@ -14,6 +14,24 @@ def test_chat_message_accepts_valid_roles(role):
 def test_chat_message_rejects_invalid_role():
     with pytest.raises(ValidationError):
         ChatMessage(role="tool", content="hola")
+
+
+@pytest.mark.parametrize("missing_field", ["role", "content"])
+def test_chat_message_rejects_missing_required_field(missing_field):
+    data = {"role": "user", "content": "hola"}
+    del data[missing_field]
+    with pytest.raises(ValidationError):
+        ChatMessage(**data)
+
+
+def test_chat_message_rejects_wrong_type_for_content():
+    with pytest.raises(ValidationError):
+        ChatMessage(role="user", content=123)
+
+
+def test_chat_message_rejects_wrong_type_for_role():
+    with pytest.raises(ValidationError):
+        ChatMessage(role=123, content="hola")
 
 
 def test_model_config_defaults():
@@ -51,6 +69,44 @@ def test_model_config_accepts_boundary_values(field, value):
 def test_model_response_error_defaults_to_none():
     response = ModelResponse(content="hola", provider="OpenAI", model_name="gpt-4o-mini")
     assert response.error is None
+    assert response.usage is None
+
+
+@pytest.mark.parametrize("missing_field", ["content", "provider", "model_name"])
+def test_model_response_rejects_missing_required_field(missing_field):
+    data = {"content": "hola", "provider": "OpenAI", "model_name": "gpt-4o-mini"}
+    del data[missing_field]
+    with pytest.raises(ValidationError):
+        ModelResponse(**data)
+
+
+@pytest.mark.parametrize("field", ["content", "provider", "model_name"])
+def test_model_response_rejects_wrong_type_for_string_fields(field):
+    data = {"content": "hola", "provider": "OpenAI", "model_name": "gpt-4o-mini"}
+    data[field] = 123
+    with pytest.raises(ValidationError):
+        ModelResponse(**data)
+
+
+def test_model_response_accepts_valid_nested_usage():
+    response = ModelResponse(
+        content="hola",
+        provider="OpenAI",
+        model_name="gpt-4o-mini",
+        usage={"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+    )
+    assert isinstance(response.usage, TokenUsage)
+    assert response.usage.total_tokens == 15
+
+
+@pytest.mark.parametrize("invalid_usage", [
+    "no es un objeto",
+    {"prompt_tokens": "diez", "completion_tokens": 5, "total_tokens": 15},  # tipo inválido
+    {"prompt_tokens": 10, "completion_tokens": 5},  # falta total_tokens
+])
+def test_model_response_rejects_invalid_usage_structure(invalid_usage):
+    with pytest.raises(ValidationError):
+        ModelResponse(content="hola", provider="OpenAI", model_name="gpt-4o-mini", usage=invalid_usage)
 
 
 def test_stream_chunk_content_defaults_to_empty_string():

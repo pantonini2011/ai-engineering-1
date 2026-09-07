@@ -10,7 +10,7 @@ from anthropic import (
 )
 import asyncio
 
-from schemas import ChatMessage, ModelConfig, ModelResponse, StreamChunk
+from schemas import ChatMessage, ModelConfig, ModelResponse, StreamChunk, TokenUsage
 
 # Reintentos ante errores transitorios (rate limit, caídas de red) con backoff
 # exponencial: 1s, 2s, 4s entre intentos.
@@ -20,6 +20,33 @@ BASE_RETRY_DELAY = 1.0
 
 async def _wait_before_retry(attempt: int) -> None:
     await asyncio.sleep(BASE_RETRY_DELAY * (2 ** attempt))
+
+
+def _usage_from_openai_style(response) -> Optional[TokenUsage]:
+    """Normaliza el `.usage` de una respuesta de OpenAI (o del endpoint
+    compatible de Ollama, que puede no incluirlo)."""
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return None
+    return TokenUsage(
+        prompt_tokens=usage.prompt_tokens,
+        completion_tokens=usage.completion_tokens,
+        total_tokens=usage.total_tokens,
+    )
+
+
+def _usage_from_anthropic_style(response) -> Optional[TokenUsage]:
+    """Normaliza el `.usage` de Anthropic (input/output) al mismo shape que
+    OpenAI (prompt/completion/total), para que ambos clientes sean
+    intercambiables sin que el consumidor conozca el proveedor de origen."""
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return None
+    return TokenUsage(
+        prompt_tokens=usage.input_tokens,
+        completion_tokens=usage.output_tokens,
+        total_tokens=usage.input_tokens + usage.output_tokens,
+    )
 
 
 class BaseLLMClient(ABC):
@@ -67,7 +94,7 @@ class OpenAIClient(BaseLLMClient):
                     top_p=config.top_p,
                 )
                 content = response.choices[0].message.content or ""
-                return ModelResponse(content=content, provider="OpenAI", model_name=self.model)
+                return ModelResponse(content=content, provider="OpenAI", model_name=self.model, usage=_usage_from_openai_style(response))
             except (RateLimitError, APIConnectionError) as e:
                 if attempt == MAX_RETRIES:
                     motivo = "Límite de tasa excedido" if isinstance(e, RateLimitError) else "Error de conexión"
@@ -141,7 +168,7 @@ class AnthropicClient(BaseLLMClient):
                     system=system_prompt if system_prompt else None,
                 )
                 content = response.content[0].text if response.content else ""
-                return ModelResponse(content=content, provider="Anthropic", model_name=self.model)
+                return ModelResponse(content=content, provider="Anthropic", model_name=self.model, usage=_usage_from_anthropic_style(response))
             except (AnthropicRateLimitError, AnthropicAPIConnectionError) as e:
                 if attempt == MAX_RETRIES:
                     motivo = "Límite de tasa excedido" if isinstance(e, AnthropicRateLimitError) else "Error de conexión"
@@ -199,7 +226,7 @@ class OllamaClient(BaseLLMClient):
                     max_tokens=config.max_tokens,
                 )
                 content = response.choices[0].message.content or ""
-                return ModelResponse(content=content, provider="Ollama", model_name=self.model)
+                return ModelResponse(content=content, provider="Ollama", model_name=self.model, usage=_usage_from_openai_style(response))
             except APIConnectionError as e:
                 # Típico cuando 'ollama serve' todavía no terminó de levantar.
                 if attempt == MAX_RETRIES:

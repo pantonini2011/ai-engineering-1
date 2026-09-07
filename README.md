@@ -79,7 +79,7 @@ Si a algún proveedor le falta la API key correspondiente o falla la conexión, 
 
 - `ChatMessage`: `role` (`system` | `user` | `assistant`) y `content`.
 - `ModelConfig`: `temperature` (0.0–2.0), `max_tokens` (> 0), `top_p` (0.0–1.0). Valores fuera de rango son rechazados por Pydantic antes de llegar a la API.
-- `ModelResponse`: `content`, `provider`, `model_name` y `error` (opcional) para representar tanto respuestas exitosas como fallidas de forma estructurada.
+- `ModelResponse`: `content`, `provider`, `model_name`, `usage` (opcional, `TokenUsage` con `prompt_tokens`/`completion_tokens`/`total_tokens` normalizados entre proveedores) y `error` (opcional) para representar tanto respuestas exitosas como fallidas de forma estructurada.
 
 ## Manejo de errores
 
@@ -94,4 +94,4 @@ pip install -r requirements-dev.txt
 pytest -v
 ```
 
-51 tests con `pytest` + `pytest-asyncio`, todos con los SDKs mockeados (sin llamadas de red reales ni gasto de créditos). Detalle completo de qué cubre cada archivo y la estrategia de mocking en [`tests/TESTING.md`](tests/TESTING.md).
+59 tests con `pytest` + `pytest-asyncio`, todos con los SDKs mockeados (sin llamadas de red reales ni gasto de créditos). Detalle completo de qué cubre cada archivo y la estrategia de mocking en [`tests/TESTING.md`](tests/TESTING.md).

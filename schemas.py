@@ -11,10 +11,20 @@ class ModelConfig(BaseModel):
     max_tokens: int = Field(default=1000, gt=0)
     top_p: float = Field(default=1.0, ge=0.0, le=1.0)
 
+class TokenUsage(BaseModel):
+    """Consumo de tokens normalizado: cada proveedor nombra estos campos
+    distinto (OpenAI: prompt/completion, Anthropic: input/output), pero acá
+    quedan mapeados a los mismos tres nombres para que el consumidor no tenga
+    que conocer el proveedor de origen."""
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+
 class ModelResponse(BaseModel):
     content: str
     provider: str
     model_name: str
+    usage: Optional[TokenUsage] = None
     error: Optional[str] = None
 
 class StreamChunk(BaseModel):
