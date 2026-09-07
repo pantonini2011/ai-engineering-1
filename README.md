@@ -94,4 +94,4 @@ pip install -r requirements-dev.txt
 pytest -v
 ```
 
-51 tests con `pytest` + `pytest-asyncio`, todos con los SDKs mockeados (sin llamadas de red reales ni gasto de créditos). Detalle completo de qué cubre cada archivo y la estrategia de mocking en [`TESTING.md`](TESTING.md).
+51 tests con `pytest` + `pytest-asyncio`, todos con los SDKs mockeados (sin llamadas de red reales ni gasto de créditos). Detalle completo de qué cubre cada archivo y la estrategia de mocking en [`tests/TESTING.md`](tests/TESTING.md).

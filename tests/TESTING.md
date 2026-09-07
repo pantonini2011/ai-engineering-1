@@ -2,6 +2,15 @@
 
 Suite de tests del *Unified Async LLM Client*, hecha con `pytest` + `pytest-asyncio`.
 
+## Framework vs. librería de mocking
+
+Son dos cosas distintas, aunque los nombres se parezcan:
+
+- **Framework de testing: `pytest`** (+ el plugin `pytest-asyncio`). No usamos `unittest` (el framework con `TestCase`, `self.assertEqual`, etc.) — los tests son funciones sueltas (`def test_...` / `async def test_...`), no clases.
+- **Librería de mocking: `unittest.mock`** (`AsyncMock`, `MagicMock`), que sí se usa y bastante — es un submódulo independiente del framework `unittest`, se puede importar en cualquier test sin usar `TestCase`. Se complementa con el fixture `monkeypatch` que trae `pytest` (para pisar variables de entorno y la función `clientes._wait_before_retry`).
+
+Es la combinación más común en proyectos Python async: `pytest` como runner, `unittest.mock` como caja de herramientas de dobles.
+
 ## Cómo correrla
 
 ```bash
