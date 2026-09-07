@@ -13,12 +13,12 @@ pipeline/
 └── tests/                # Suite de tests con pytest (mockean el modelo, no pegan a la red)
 ```
 
-Usa el mismo criterio de proveedor intercambiable del [Módulo 1](../README.md) (`openai`/`anthropic`, tomando el modelo de `OPENAI_MODEL`/`ANTHROPIC_MODEL` si no se pasa explícito) y las mismas variables de entorno (`.env`).
+Usa el mismo criterio de proveedor intercambiable del [Módulo 1](../README.md) (`openai`/`anthropic`/`ollama`, tomando el modelo de `OPENAI_MODEL`/`ANTHROPIC_MODEL`/`OLLAMA_MODEL` si no se pasa explícito) y las mismas variables de entorno (`.env`). Para `ollama`, `_build_model` usa `langchain-ollama` (habla con la API nativa de Ollama, no con el endpoint OpenAI-compatible que usa el Módulo 1) y traduce `OLLAMA_BASE_URL` sacándole el sufijo `/v1` si lo tiene; requiere que el modelo tenga soporte de tool-calling (`qwen2.5:7b` lo tiene) y que `ollama serve` esté corriendo.
 
 ## Cómo correrlo
 
 ```bash
-pip install -r requirements.txt   # incluye langchain-core/openai/anthropic
+pip install -r requirements.txt   # incluye langchain-core/openai/anthropic/ollama
 python -m pipeline.main
 ```
 
@@ -47,6 +47,16 @@ Salida real (Anthropic, `claude-haiku-4-5-20251001`):
   "tecnologias": ["FastAPI", "Redis", "PostgreSQL", "Connection Pool"],
   "nivel_de_criticidad": "alta",
   "resumen_tecnico": "El sistema experimenta timeouts intermitentes en producción debido a un cuello de botella en el pool de conexiones a PostgreSQL bajo carga alta, afectando la disponibilidad de la API expuesta con FastAPI que utiliza Redis para caché de sesión."
+}
+```
+
+Salida real con `provider="ollama"` (local, `qwen2.5:7b`):
+
+```json
+{
+  "tecnologias": ["FastAPI", "Redis", "PostgreSQL"],
+  "nivel_de_criticidad": "alta",
+  "resumen_tecnico": "El sistema utiliza FastAPI para la API, Redis como caché y PostgreSQL como base de datos principal, experimentando un cuello de botella en el pool de conexiones bajo alta carga."
 }
 ```
 
@@ -136,12 +146,12 @@ pip install -r requirements-dev.txt
 pytest pipeline/tests/ -v
 ```
 
-24 tests. En vez de mockear `ChatOpenAI`/`ChatAnthropic` directamente (harían falta parchear varias capas internas de LangChain), se mockea `_build_model` para que devuelva un `FakeStructuredModel`: un doble mínimo cuyo `.with_structured_output()` entrega, en orden, los resultados que le pasa cada test (incluyendo excepciones). Así se testea la cadena LCEL real (`PROMPT | structured_llm | RunnableLambda(_validar_salida)` + `.with_retry()`) de punta a punta, sin pegarle a ninguna API.
+26 tests. En vez de mockear `ChatOpenAI`/`ChatAnthropic`/`ChatOllama` directamente (harían falta parchear varias capas internas de LangChain), se mockea `_build_model` para que devuelva un `FakeStructuredModel`: un doble mínimo cuyo `.with_structured_output()` entrega, en orden, los resultados que le pasa cada test (incluyendo excepciones). Así se testea la cadena LCEL real (`PROMPT | structured_llm | RunnableLambda(_validar_salida)` + `.with_retry()`) de punta a punta, sin pegarle a ninguna API.
 
 - `test_schemas.py`: `EntidadTecnica` acepta datos válidos, rechaza lista de tecnologías vacía, `nivel_de_criticidad` inválido, `resumen_tecnico` vacío, campos faltantes y tipos incorrectos.
 - `test_chain.py`:
   - `_validar_salida` en aislamiento: acepta una salida completa, rechaza `finish_reason`/`stop_reason` de truncamiento (los tres nombres que usan OpenAI/Anthropic), rechaza un `parsing_error` y rechaza `parsed=None` sin error.
-  - `_build_model`: selecciona la clase correcta por proveedor, rechaza uno desconocido, respeta el override de `max_tokens`.
+  - `_build_model`: selecciona la clase correcta por proveedor (`openai`/`anthropic`/`ollama`), rechaza uno desconocido, respeta el override de `max_tokens` (y su equivalente `num_predict` en Ollama), y le saca el sufijo `/v1` a `OLLAMA_BASE_URL`.
   - **Caso crítico "reintentos y recuperación"**: `build_chain()` falla 2 veces por respuesta truncada y se recupera en el 3er intento — el modelo mockeado se llamó exactamente 3 veces.
   - **Caso crítico "agotamiento"**: falla siempre — `RespuestaIncompletaError` se propaga tras exactamente `MAX_RETRY_ATTEMPTS` llamadas (acá, a diferencia del Módulo 1, el diseño es dejar que la excepción suba en vez de devolver un objeto de error estructurado).
   - `process_text()`: retorna la entidad validada en el camino feliz y propaga la excepción tras agotar los reintentos.

@@ -7,6 +7,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable, RunnableLambda
+from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
 from pipeline.schemas import EntidadTecnica
@@ -47,12 +48,24 @@ def _build_model(provider: str = "openai", model: Optional[str] = None, max_toke
     truncada a propósito."""
     provider = provider.lower()
     kwargs = {"temperature": 0}
-    if max_tokens is not None:
-        kwargs["max_tokens"] = max_tokens
     if provider == "openai":
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
         return ChatOpenAI(model=model or os.getenv("OPENAI_MODEL", "gpt-4o-mini"), **kwargs)
     if provider == "anthropic":
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
         return ChatAnthropic(model=model or os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"), **kwargs)
+    if provider == "ollama":
+        # Ollama nombra el límite de tokens de salida "num_predict", no "max_tokens".
+        if max_tokens is not None:
+            kwargs["num_predict"] = max_tokens
+        # OLLAMA_BASE_URL (Módulo 1) apunta al endpoint OpenAI-compatible ("/v1");
+        # ChatOllama habla con la API nativa de Ollama, sin ese sufijo.
+        base_url = os.getenv("OLLAMA_BASE_URL")
+        if base_url:
+            kwargs["base_url"] = base_url.removesuffix("/v1")
+        return ChatOllama(model=model or os.getenv("OLLAMA_MODEL", "qwen2.5:7b"), **kwargs)
     raise ValueError(f"Proveedor '{provider}' no soportado.")
 
 

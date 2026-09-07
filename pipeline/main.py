@@ -37,7 +37,7 @@ async def probar(provider: str, texto: str, etiqueta: str) -> None:
 
 
 async def main() -> None:
-    for provider in ("openai", "anthropic"):
+    for provider in ("openai", "anthropic", "ollama"):
         await probar(provider, TEXTO_EJEMPLO, "Texto claro")
         await probar(provider, TEXTO_AMBIGUO, "Texto ambiguo (prueba de estrés)")
 

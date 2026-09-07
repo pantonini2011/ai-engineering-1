@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 from langchain_anthropic import ChatAnthropic
 from langchain_core.runnables import RunnableLambda
+from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
 import pipeline.chain as chain_module
@@ -92,6 +93,7 @@ def test_validar_salida_rechaza_si_no_hay_objeto_parseado_aunque_no_haya_parsing
 def test_build_model_selecciona_la_clase_correcta_por_proveedor():
     assert isinstance(chain_module._build_model("openai"), ChatOpenAI)
     assert isinstance(chain_module._build_model("anthropic"), ChatAnthropic)
+    assert isinstance(chain_module._build_model("ollama"), ChatOllama)
 
 
 def test_build_model_rechaza_proveedor_desconocido():
@@ -102,6 +104,17 @@ def test_build_model_rechaza_proveedor_desconocido():
 def test_build_model_respeta_max_tokens_override():
     modelo = chain_module._build_model("anthropic", max_tokens=15)
     assert modelo.max_tokens == 15
+
+
+def test_build_model_ollama_usa_num_predict_en_vez_de_max_tokens():
+    modelo = chain_module._build_model("ollama", max_tokens=15)
+    assert modelo.num_predict == 15
+
+
+def test_build_model_ollama_saca_el_sufijo_v1_de_ollama_base_url(monkeypatch):
+    monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+    modelo = chain_module._build_model("ollama")
+    assert modelo.base_url == "http://localhost:11434"
 
 
 # --- build_chain / process_text: retry end-to-end con el modelo mockeado ---
