@@ -89,15 +89,9 @@ Ante `RateLimitError` y `APIConnectionError` (errores transitorios) se reintenta
 
 ## Tests
 
-La suite usa `pytest` + `pytest-asyncio` y mockea los SDKs de `openai`/`anthropic` (nunca hace llamadas de red reales, no consume créditos de ninguna API):
-
 ```bash
 pip install -r requirements-dev.txt
 pytest -v
 ```
 
-Cobertura:
-
-- `schemas.py`: rangos y roles válidos/inválidos de `ChatMessage` y `ModelConfig`.
-- `OpenAIClient` / `AnthropicClient` / `OllamaClient`: `generate()` y `stream()` exitosos, mapeo de errores a `ModelResponse`/`StreamChunk`, y la lógica de reintento con backoff (incluyendo que no reintenta una vez que ya se emitió un fragmento en streaming).
-- `AsyncLLMManager`: selección dinámica de proveedor, proveedor inválido, propagación de configuración por default y explícita, delegación de `stream()`/`close()`.
+51 tests con `pytest` + `pytest-asyncio`, todos con los SDKs mockeados (sin llamadas de red reales ni gasto de créditos). Detalle completo de qué cubre cada archivo y la estrategia de mocking en [`TESTING.md`](TESTING.md).
