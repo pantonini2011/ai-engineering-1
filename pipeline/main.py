@@ -3,7 +3,11 @@ import logging
 
 from pipeline.chain import RespuestaIncompletaError, process_text
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    handlers=[logging.StreamHandler(), logging.FileHandler("pipeline/pipeline.log")],
+)
 
 TEXTO_EJEMPLO = (
     "El sistema expone una API con FastAPI, usa Redis como caché de sesión y "

@@ -21,7 +21,11 @@ from langchain_core.runnables import Runnable, RunnableLambda
 from pipeline.chain import PROMPT, _build_model
 from pipeline.schemas import EntidadTecnica
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    handlers=[logging.StreamHandler(), logging.FileHandler("pipeline/pipeline.log")],
+)
 logger = logging.getLogger(__name__)
 
 MAX_TOKENS_CHAIN_ROTA = 15  # imposible de completar el JSON de EntidadTecnica
