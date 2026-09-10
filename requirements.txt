@@ -3,9 +3,3 @@ anthropic>=0.34.0,<1.0.0
 pydantic>=2.7.0,<3.0.0
 python-dotenv>=1.0.0,<2.0.0
 
-# Módulo 2: pipeline LCEL (pipeline/)
-langchain-core>=0.3,<0.4
-langchain-openai>=0.2,<0.3
-langchain-anthropic>=0.3,<0.4
-langchain-ollama>=0.2,<0.3
-

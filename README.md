@@ -10,7 +10,6 @@ Cliente asíncrono unificado para interactuar con distintos proveedores de LLM (
 ├── clientes.py          # BaseLLMClient (ABC), OpenAIClient, AnthropicClient, OllamaClient, AsyncLLMManager
 ├── main.py              # Script de prueba: modo estándar + streaming
 ├── tests/               # Suite de tests con pytest (mockean los SDKs, no pegan a la red)
-├── pipeline/            # Módulo 2: pipeline LCEL de extracción de entidades técnicas (ver pipeline/README.md)
 ├── requirements.txt
 ├── requirements-dev.txt # requirements.txt + pytest/pytest-asyncio
 ├── pytest.ini
@@ -96,9 +95,3 @@ pytest -v
 ```
 
 73 tests con `pytest` + `pytest-asyncio`, todos con los SDKs mockeados (sin llamadas de red reales ni gasto de créditos). Detalle completo de qué cubre cada archivo y la estrategia de mocking en [`TESTING.md`](TESTING.md).
-
-`pytest` sin argumentos desde la raíz corre esta suite **más** la del pipeline del Módulo 2 (`pipeline/tests/`) — 99 tests en total. Para correr solo la de este módulo: `pytest tests/`.
-
-## Módulo 2: pipeline LCEL
-
-Pre-entrega 2 agrega un pipeline de extracción de entidades técnicas con LangChain (LCEL) sobre este mismo repo, reutilizando el criterio de proveedor intercambiable de este módulo — incluye su propia suite de tests (`pipeline/tests/`, no pedida por la consigna pero agregada con el mismo criterio). Ver [`pipeline/README.md`](pipeline/README.md).
